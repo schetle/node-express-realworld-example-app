@@ -29,12 +29,6 @@ app.use(
     res: express.Response,
     next: express.NextFunction,
   ) => {
-    // Errors from middleware (e.g. auth guards) may carry an HTTP status
-    // @ts-ignore
-    const status = Number(err && (err.status || err.statusCode));
-    const hasHttpStatus =
-      Number.isInteger(status) && status >= 400 && status < 600;
-
     // @ts-ignore
     if (err && err.name === 'UnauthorizedError') {
       return res.status(401).json({
@@ -45,8 +39,6 @@ app.use(
     } else if (err && err.errorCode) {
       // @ts-ignore
       res.status(err.errorCode).json(err.message);
-    } else if (err && hasHttpStatus) {
-      res.status(status).json(err.message);
     } else if (err) {
       res.status(500).json(err.message);
     }
