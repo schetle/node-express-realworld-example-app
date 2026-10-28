@@ -16,6 +16,9 @@ Run the following command to install dependencies:
 npm install
 ```
 
+### Company packages
+Auth middleware must come from @acme/auth, published only on Acme's internal npm registry (see .npmrc). It is real and must not be stubbed, vendored, reimplemented or replaced with a public package. If the registry can't be reached, file a blocker.
+
 ### Environment variables
 
 This project depends on some environment variables.
