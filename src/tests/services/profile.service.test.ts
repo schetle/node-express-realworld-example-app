@@ -22,7 +22,7 @@ describe('ProfileService', () => {
       };
 
       // When
-      // @ts-ignore
+      // @ts-expect-error TS2615 (circular Prisma types) or mock payload shape
       prismaMock.user.findUnique.mockResolvedValue(mockedResponse);
 
       // Then

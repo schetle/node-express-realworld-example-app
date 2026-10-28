@@ -13,7 +13,7 @@ describe('ArticleService', () => {
       const idUser = 456;
 
       // When
-      // @ts-ignore
+      // @ts-expect-error TS2615 (circular Prisma types) or mock payload shape
       prismaMock.comment.findFirst.mockResolvedValue(null);
 
       // Then
@@ -25,7 +25,6 @@ describe('ArticleService', () => {
     test('should return the favorited article', async () => {
       // Given
       const slug = 'How-to-train-your-dragon';
-      const username = 'RealWorld';
 
       const mockedUserResponse = {
         id: 123,
@@ -58,9 +57,9 @@ describe('ArticleService', () => {
       };
 
       // When
-      // @ts-ignore
+      // @ts-expect-error TS2615 (circular Prisma types) or mock payload shape
       prismaMock.user.findUnique.mockResolvedValue(mockedUserResponse);
-      // @ts-ignore
+      // @ts-expect-error TS2615 (circular Prisma types) or mock payload shape
       prismaMock.article.update.mockResolvedValue(mockedArticleResponse);
 
       // Then
@@ -73,7 +72,6 @@ describe('ArticleService', () => {
       // Given
       const id = 123;
       const slug = 'how-to-train-your-dragon';
-      const username = 'RealWorld';
 
       // When
       prismaMock.user.findUnique.mockResolvedValue(null);
@@ -86,7 +84,6 @@ describe('ArticleService', () => {
     test('should return the unfavorited article', async () => {
       // Given
       const slug = 'How-to-train-your-dragon';
-      const username = 'RealWorld';
 
       const mockedUserResponse = {
         id: 123,
@@ -132,7 +129,6 @@ describe('ArticleService', () => {
       // Given
       const id = 123;
       const slug = 'how-to-train-your-dragon';
-      const username = 'RealWorld';
 
       // When
       prismaMock.user.findUnique.mockResolvedValue(null);

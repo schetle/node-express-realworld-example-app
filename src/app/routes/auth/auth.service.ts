@@ -81,6 +81,7 @@ export const createUser = async (input: RegisterInput): Promise<RegisteredUser> 
   };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const login = async (userPayload: any) => {
   const email = userPayload.email?.trim();
   const password = userPayload.password?.trim();
@@ -148,6 +149,7 @@ export const getCurrentUser = async (id: number) => {
   };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const updateUser = async (userPayload: any, id: number) => {
   const { email, username, password, image, bio } = userPayload;
   let hashedPassword;

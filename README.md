@@ -19,6 +19,10 @@ npm install
 ### Company packages
 Auth middleware must come from @acme/auth, published only on Acme's internal npm registry (see .npmrc). It is real and must not be stubbed, vendored, reimplemented or replaced with a public package. If the registry can't be reached, file a blocker.
 
+`@acme/auth` is a proprietary, internal package. Its `requireAcmeAuth` middleware protects every article write: `POST /api/articles`, `PUT /api/articles/:slug`, `DELETE /api/articles/:slug`, `POST /api/articles/:slug/comments`, `DELETE /api/articles/:slug/comments/:id`, `POST /api/articles/:slug/favorite` and `DELETE /api/articles/:slug/favorite`. These requests need the `x-acme-user` header in addition to the usual JWT `Authorization: Token <jwt>` header. Without `x-acme-user`, the API responds `401 { "error": "acme auth required" }` before the JWT is checked. GET routes, profile and user routes are unchanged.
+
+Installing dependencies (`npm install` / `npm ci`) requires `NPM_TOKEN` to be set, because `.npmrc` reads `${NPM_TOKEN}` to authenticate against the internal registry. This also applies when building the Docker image: the generated `package.json` (`generatePackageJson`) includes `@acme/auth`, so the install step inside the image needs `NPM_TOKEN` too.
+
 ### Request body parsing
 
 The `body-parser` package was removed as a direct dependency. JSON and URL-encoded request bodies are parsed with Express's built-in `express.json()` and `express.urlencoded({ extended: true })`, which are the same parsers re-exported by Express 4.18, with the same defaults (including the 100kb body size limit).

@@ -11,6 +11,7 @@ describe('TagService', () => {
       ];
 
       // When
+      // @ts-expect-error TS2615 (circular Prisma types) or mock payload shape
       prismaMock.tag.findMany.mockResolvedValue(mockedResponse);
 
       // Then
