@@ -19,6 +19,10 @@ npm install
 ### Company packages
 Auth middleware must come from @acme/auth, published only on Acme's internal npm registry (see .npmrc). It is real and must not be stubbed, vendored, reimplemented or replaced with a public package. If the registry can't be reached, file a blocker.
 
+### Request body parsing
+
+The `body-parser` package was removed as a direct dependency. JSON and URL-encoded request bodies are parsed with Express's built-in `express.json()` and `express.urlencoded({ extended: true })`, which are the same parsers re-exported by Express 4.18, with the same defaults (including the 100kb body size limit).
+
 ### Environment variables
 
 This project depends on some environment variables.
