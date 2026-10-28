@@ -1,6 +1,7 @@
+// prisma-mock must be imported first so the Prisma client is mocked before the service loads it.
+import prismaMock from '../prisma-mock';
 import * as bcrypt from 'bcryptjs';
 import { createUser, getCurrentUser, login, updateUser } from '../../app/routes/auth/auth.service';
-import prismaMock from '../prisma-mock';
 
 describe('AuthService', () => {
   describe('createUser', () => {
@@ -25,7 +26,7 @@ describe('AuthService', () => {
       };
 
       // When
-      // @ts-ignore
+      // @ts-expect-error TS2615 (circular Prisma types) or mock payload shape
       prismaMock.user.create.mockResolvedValue(mockedResponse);
 
       // Then

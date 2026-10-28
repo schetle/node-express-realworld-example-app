@@ -7,6 +7,7 @@ export interface User {
   email: string;
   password: string;
   bio: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   image: any | null;
   articles: Article[];
   favorites: Article[];

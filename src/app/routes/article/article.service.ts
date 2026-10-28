@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- pre-existing untyped Prisma query payloads */
 import slugify from 'slugify';
 import prisma from '../../../prisma/prisma-client';
 import HttpException from '../../models/http-exception.model';
@@ -191,7 +192,9 @@ export const createArticle = async (article: any, id: number) => {
   }
 
   const {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     authorId,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     id: articleId,
     ...createdArticle
   } = await prisma.article.create({

@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response, Router } from 'express';
+import { requireAcmeAuth } from '@acme/auth';
 import auth from '../auth/auth';
 import {
   addComment,
@@ -15,6 +16,9 @@ import {
 } from './article.service';
 
 const router = Router();
+
+// Article writes require the Acme check before the JWT check.
+const acmeWriteGuard = [requireAcmeAuth, auth.required];
 
 /**
  * Get paginated articles
@@ -68,14 +72,18 @@ router.get(
  * @bodyparam  tagList list of tags
  * @returns article created article
  */
-router.post('/articles', auth.required, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const article = await createArticle(req.body.article, req.auth?.user?.id);
-    res.status(201).json({ article });
-  } catch (error) {
-    next(error);
-  }
-});
+router.post(
+  '/articles',
+  acmeWriteGuard,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const article = await createArticle(req.body.article, req.auth?.user?.id);
+      res.status(201).json({ article });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 /**
  * Get unique article
@@ -109,7 +117,7 @@ router.get(
  */
 router.put(
   '/articles/:slug',
-  auth.required,
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const article = await updateArticle(req.body.article, req.params.slug, req.auth?.user?.id);
@@ -128,7 +136,7 @@ router.put(
  */
 router.delete(
   '/articles/:slug',
-  auth.required,
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await deleteArticle(req.params.slug, req.auth?.user!.id);
@@ -169,7 +177,7 @@ router.get(
  */
 router.post(
   '/articles/:slug/comments',
-  auth.required,
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const comment = await addComment(req.body.comment.body, req.params.slug, req.auth?.user?.id);
@@ -189,7 +197,7 @@ router.post(
  */
 router.delete(
   '/articles/:slug/comments/:id',
-  auth.required,
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await deleteComment(Number(req.params.id), req.auth?.user?.id);
@@ -209,7 +217,7 @@ router.delete(
  */
 router.post(
   '/articles/:slug/favorite',
-  auth.required,
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const article = await favoriteArticle(req.params.slug, req.auth?.user?.id);
@@ -229,7 +237,7 @@ router.post(
  */
 router.delete(
   '/articles/:slug/favorite',
-  auth.required,
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const article = await unfavoriteArticle(req.params.slug, req.auth?.user?.id);
