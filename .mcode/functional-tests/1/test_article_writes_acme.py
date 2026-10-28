@@ -1,7 +1,7 @@
 """Article write routes require BOTH x-acme-user and a valid JWT (milestone 1)."""
 import requests
 
-from conftest import ACME, API, RUN_ID, create_article, tok
+from conftest import ACME, API, BASE_URL, RUN_ID, _created_slugs, create_article, tok
 
 
 def get_article(slug, token=None):
@@ -18,7 +18,6 @@ class TestCreateArticle:
                "POST", "/api/articles", body)
         assert r.status_code == 201
         art = r.json()["article"]
-        from conftest import _created_slugs
         _created_slugs.append((art["slug"], author["token"]))
         assert art["title"] == title
         assert art["author"]["username"] == author["username"]
@@ -74,7 +73,7 @@ class TestUpdateArticle:
     def test_update_article_with_acme_and_jwt(self, author, fresh_article, ev):
         body = {"article": {"description": "updated desc", "body": "updated body"}}
         ep = f"/api/articles/{fresh_article['slug']}"
-        r = ev(requests.put(f"{API}/articles/{fresh_article['slug']}", json=body,
+        r = ev(requests.put(f"{BASE_URL}{ep}", json=body,
                             headers={**ACME, **tok(author["token"])}, timeout=10), "PUT", ep, body)
         assert r.status_code == 200
         art = r.json()["article"]
@@ -84,7 +83,7 @@ class TestUpdateArticle:
     def test_update_article_without_acme_header(self, author, fresh_article, ev):
         body = {"article": {"body": "should not apply"}}
         ep = f"/api/articles/{fresh_article['slug']}"
-        r = ev(requests.put(f"{API}/articles/{fresh_article['slug']}", json=body,
+        r = ev(requests.put(f"{BASE_URL}{ep}", json=body,
                             headers=tok(author["token"]), timeout=10), "PUT", ep, body)
         assert r.status_code == 401
         assert r.json() == {"error": "acme auth required"}
@@ -93,7 +92,7 @@ class TestUpdateArticle:
     def test_update_article_acme_without_jwt(self, fresh_article, ev):
         body = {"article": {"body": "should not apply"}}
         ep = f"/api/articles/{fresh_article['slug']}"
-        r = ev(requests.put(f"{API}/articles/{fresh_article['slug']}", json=body, headers=ACME, timeout=10),
+        r = ev(requests.put(f"{BASE_URL}{ep}", json=body, headers=ACME, timeout=10),
                "PUT", ep, body)
         assert r.status_code == 401
         assert get_article(fresh_article["slug"]).json()["article"]["body"] == "ft body"
@@ -101,47 +100,42 @@ class TestUpdateArticle:
     def test_update_article_not_owner(self, other_user, article, ev):
         body = {"article": {"body": "hijack"}}
         ep = f"/api/articles/{article['slug']}"
-        r = ev(requests.put(f"{API}/articles/{article['slug']}", json=body,
+        r = ev(requests.put(f"{BASE_URL}{ep}", json=body,
                             headers={**ACME, **tok(other_user["token"])}, timeout=10), "PUT", ep, body)
         assert r.status_code == 403
 
     def test_update_article_not_found(self, author, ev):
         body = {"article": {"body": "x"}}
         ep = f"/api/articles/no-such-slug-{RUN_ID}"
-        r = ev(requests.put(f"{BASE()}{ep}", json=body, headers={**ACME, **tok(author["token"])}, timeout=10),
+        r = ev(requests.put(f"{BASE_URL}{ep}", json=body, headers={**ACME, **tok(author["token"])}, timeout=10),
                "PUT", ep, body)
         assert r.status_code == 404
-
-
-def BASE():
-    from conftest import BASE_URL
-    return BASE_URL
 
 
 class TestDeleteArticle:
     def test_delete_article_with_acme_and_jwt(self, author, ev):
         art = create_article(author, "todelete")
         ep = f"/api/articles/{art['slug']}"
-        r = ev(requests.delete(f"{BASE()}{ep}", headers={**ACME, **tok(author["token"])}, timeout=10), "DELETE", ep)
+        r = ev(requests.delete(f"{BASE_URL}{ep}", headers={**ACME, **tok(author["token"])}, timeout=10), "DELETE", ep)
         assert r.status_code == 204
         assert get_article(art["slug"]).status_code == 404
 
     def test_delete_article_without_acme_header(self, author, fresh_article, ev):
         ep = f"/api/articles/{fresh_article['slug']}"
-        r = ev(requests.delete(f"{BASE()}{ep}", headers=tok(author["token"]), timeout=10), "DELETE", ep)
+        r = ev(requests.delete(f"{BASE_URL}{ep}", headers=tok(author["token"]), timeout=10), "DELETE", ep)
         assert r.status_code == 401
         assert r.json() == {"error": "acme auth required"}
         assert get_article(fresh_article["slug"]).status_code == 200
 
     def test_delete_article_acme_without_jwt(self, fresh_article, ev):
         ep = f"/api/articles/{fresh_article['slug']}"
-        r = ev(requests.delete(f"{BASE()}{ep}", headers=ACME, timeout=10), "DELETE", ep)
+        r = ev(requests.delete(f"{BASE_URL}{ep}", headers=ACME, timeout=10), "DELETE", ep)
         assert r.status_code == 401
         assert get_article(fresh_article["slug"]).status_code == 200
 
     def test_delete_article_not_owner(self, other_user, article, ev):
         ep = f"/api/articles/{article['slug']}"
-        r = ev(requests.delete(f"{BASE()}{ep}", headers={**ACME, **tok(other_user["token"])}, timeout=10),
+        r = ev(requests.delete(f"{BASE_URL}{ep}", headers={**ACME, **tok(other_user["token"])}, timeout=10),
                "DELETE", ep)
         assert r.status_code == 403
         assert get_article(article["slug"]).status_code == 200
@@ -159,7 +153,7 @@ class TestComments:
     def test_add_comment_with_acme_and_jwt(self, author, article, ev):
         body = {"comment": {"body": f"hello {RUN_ID}"}}
         ep = f"/api/articles/{article['slug']}/comments"
-        r = ev(requests.post(f"{BASE()}{ep}", json=body, headers={**ACME, **tok(author["token"])}, timeout=10),
+        r = ev(requests.post(f"{BASE_URL}{ep}", json=body, headers={**ACME, **tok(author["token"])}, timeout=10),
                "POST", ep, body)
         assert r.status_code == 200
         c = r.json()["comment"]
@@ -170,7 +164,7 @@ class TestComments:
         text = f"noacme {RUN_ID}"
         body = {"comment": {"body": text}}
         ep = f"/api/articles/{article['slug']}/comments"
-        r = ev(requests.post(f"{BASE()}{ep}", json=body, headers=tok(author["token"]), timeout=10), "POST", ep, body)
+        r = ev(requests.post(f"{BASE_URL}{ep}", json=body, headers=tok(author["token"]), timeout=10), "POST", ep, body)
         assert r.status_code == 401
         assert r.json() == {"error": "acme auth required"}
         assert all(x["body"] != text for x in self._list(article["slug"], author["token"]))
@@ -179,14 +173,14 @@ class TestComments:
         text = f"nojwt {RUN_ID}"
         body = {"comment": {"body": text}}
         ep = f"/api/articles/{article['slug']}/comments"
-        r = ev(requests.post(f"{BASE()}{ep}", json=body, headers=ACME, timeout=10), "POST", ep, body)
+        r = ev(requests.post(f"{BASE_URL}{ep}", json=body, headers=ACME, timeout=10), "POST", ep, body)
         assert r.status_code == 401
         assert all(x["body"] != text for x in self._list(article["slug"], author["token"]))
 
     def test_add_comment_empty_body(self, author, article, ev):
         body = {"comment": {"body": ""}}
         ep = f"/api/articles/{article['slug']}/comments"
-        r = ev(requests.post(f"{BASE()}{ep}", json=body, headers={**ACME, **tok(author["token"])}, timeout=10),
+        r = ev(requests.post(f"{BASE_URL}{ep}", json=body, headers={**ACME, **tok(author["token"])}, timeout=10),
                "POST", ep, body)
         assert r.status_code == 422
         assert r.json() == {"errors": {"body": ["can't be blank"]}}
@@ -194,7 +188,7 @@ class TestComments:
     def test_delete_comment_with_acme_and_jwt(self, author, article, ev):
         cid = self._add(author, article["slug"]).json()["comment"]["id"]
         ep = f"/api/articles/{article['slug']}/comments/{cid}"
-        r = ev(requests.delete(f"{BASE()}{ep}", headers={**ACME, **tok(author["token"])}, timeout=10), "DELETE", ep)
+        r = ev(requests.delete(f"{BASE_URL}{ep}", headers={**ACME, **tok(author["token"])}, timeout=10), "DELETE", ep)
         assert r.status_code == 200
         assert r.json() == {}
         assert all(x["id"] != cid for x in self._list(article["slug"], author["token"]))
@@ -202,7 +196,7 @@ class TestComments:
     def test_delete_comment_without_acme_header(self, author, article, ev):
         cid = self._add(author, article["slug"]).json()["comment"]["id"]
         ep = f"/api/articles/{article['slug']}/comments/{cid}"
-        r = ev(requests.delete(f"{BASE()}{ep}", headers=tok(author["token"]), timeout=10), "DELETE", ep)
+        r = ev(requests.delete(f"{BASE_URL}{ep}", headers=tok(author["token"]), timeout=10), "DELETE", ep)
         assert r.status_code == 401
         assert r.json() == {"error": "acme auth required"}
         assert any(x["id"] == cid for x in self._list(article["slug"], author["token"]))
@@ -210,34 +204,34 @@ class TestComments:
     def test_delete_comment_acme_without_jwt(self, author, article, ev):
         cid = self._add(author, article["slug"]).json()["comment"]["id"]
         ep = f"/api/articles/{article['slug']}/comments/{cid}"
-        r = ev(requests.delete(f"{BASE()}{ep}", headers=ACME, timeout=10), "DELETE", ep)
+        r = ev(requests.delete(f"{BASE_URL}{ep}", headers=ACME, timeout=10), "DELETE", ep)
         assert r.status_code == 401
         assert any(x["id"] == cid for x in self._list(article["slug"], author["token"]))
 
     def test_delete_comment_not_found(self, author, article, ev):
         ep = f"/api/articles/{article['slug']}/comments/999999999"
-        r = ev(requests.delete(f"{BASE()}{ep}", headers={**ACME, **tok(author["token"])}, timeout=10), "DELETE", ep)
+        r = ev(requests.delete(f"{BASE_URL}{ep}", headers={**ACME, **tok(author["token"])}, timeout=10), "DELETE", ep)
         assert r.status_code == 404
 
 
 class TestFavorite:
     def test_favorite_with_acme_and_jwt(self, other_user, fresh_article, ev):
         ep = f"/api/articles/{fresh_article['slug']}/favorite"
-        r = ev(requests.post(f"{BASE()}{ep}", headers={**ACME, **tok(other_user["token"])}, timeout=10), "POST", ep)
+        r = ev(requests.post(f"{BASE_URL}{ep}", headers={**ACME, **tok(other_user["token"])}, timeout=10), "POST", ep)
         assert r.status_code == 200
         art = r.json()["article"]
         assert art["favorited"] is True and art["favoritesCount"] == 1
 
     def test_favorite_without_acme_header(self, other_user, fresh_article, ev):
         ep = f"/api/articles/{fresh_article['slug']}/favorite"
-        r = ev(requests.post(f"{BASE()}{ep}", headers=tok(other_user["token"]), timeout=10), "POST", ep)
+        r = ev(requests.post(f"{BASE_URL}{ep}", headers=tok(other_user["token"]), timeout=10), "POST", ep)
         assert r.status_code == 401
         assert r.json() == {"error": "acme auth required"}
         assert get_article(fresh_article["slug"]).json()["article"]["favoritesCount"] == 0
 
     def test_favorite_acme_without_jwt(self, fresh_article, ev):
         ep = f"/api/articles/{fresh_article['slug']}/favorite"
-        r = ev(requests.post(f"{BASE()}{ep}", headers=ACME, timeout=10), "POST", ep)
+        r = ev(requests.post(f"{BASE_URL}{ep}", headers=ACME, timeout=10), "POST", ep)
         assert r.status_code == 401
         assert get_article(fresh_article["slug"]).json()["article"]["favoritesCount"] == 0
 
@@ -245,7 +239,7 @@ class TestFavorite:
         h = {**ACME, **tok(other_user["token"])}
         assert requests.post(f"{API}/articles/{fresh_article['slug']}/favorite", headers=h, timeout=10).status_code == 200
         ep = f"/api/articles/{fresh_article['slug']}/favorite"
-        r = ev(requests.delete(f"{BASE()}{ep}", headers=h, timeout=10), "DELETE", ep)
+        r = ev(requests.delete(f"{BASE_URL}{ep}", headers=h, timeout=10), "DELETE", ep)
         assert r.status_code == 200
         art = r.json()["article"]
         assert art["favorited"] is False and art["favoritesCount"] == 0
@@ -254,7 +248,7 @@ class TestFavorite:
         h = {**ACME, **tok(other_user["token"])}
         assert requests.post(f"{API}/articles/{fresh_article['slug']}/favorite", headers=h, timeout=10).status_code == 200
         ep = f"/api/articles/{fresh_article['slug']}/favorite"
-        r = ev(requests.delete(f"{BASE()}{ep}", headers=tok(other_user["token"]), timeout=10), "DELETE", ep)
+        r = ev(requests.delete(f"{BASE_URL}{ep}", headers=tok(other_user["token"]), timeout=10), "DELETE", ep)
         assert r.status_code == 401
         assert r.json() == {"error": "acme auth required"}
         a = get_article(fresh_article["slug"], other_user["token"]).json()["article"]
@@ -264,6 +258,6 @@ class TestFavorite:
         h = {**ACME, **tok(other_user["token"])}
         assert requests.post(f"{API}/articles/{fresh_article['slug']}/favorite", headers=h, timeout=10).status_code == 200
         ep = f"/api/articles/{fresh_article['slug']}/favorite"
-        r = ev(requests.delete(f"{BASE()}{ep}", headers=ACME, timeout=10), "DELETE", ep)
+        r = ev(requests.delete(f"{BASE_URL}{ep}", headers=ACME, timeout=10), "DELETE", ep)
         assert r.status_code == 401
         assert get_article(fresh_article["slug"]).json()["article"]["favoritesCount"] == 1
