@@ -17,6 +17,9 @@ import {
 
 const router = Router();
 
+// Article writes require the Acme check before the JWT check.
+const acmeWriteGuard = [requireAcmeAuth, auth.required];
+
 /**
  * Get paginated articles
  * @auth optional
@@ -71,7 +74,7 @@ router.get(
  */
 router.post(
   '/articles',
-  [requireAcmeAuth, auth.required],
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const article = await createArticle(req.body.article, req.auth?.user?.id);
@@ -114,7 +117,7 @@ router.get(
  */
 router.put(
   '/articles/:slug',
-  [requireAcmeAuth, auth.required],
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const article = await updateArticle(req.body.article, req.params.slug, req.auth?.user?.id);
@@ -133,7 +136,7 @@ router.put(
  */
 router.delete(
   '/articles/:slug',
-  [requireAcmeAuth, auth.required],
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await deleteArticle(req.params.slug, req.auth?.user!.id);
@@ -174,7 +177,7 @@ router.get(
  */
 router.post(
   '/articles/:slug/comments',
-  [requireAcmeAuth, auth.required],
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const comment = await addComment(req.body.comment.body, req.params.slug, req.auth?.user?.id);
@@ -194,7 +197,7 @@ router.post(
  */
 router.delete(
   '/articles/:slug/comments/:id',
-  [requireAcmeAuth, auth.required],
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await deleteComment(Number(req.params.id), req.auth?.user?.id);
@@ -214,7 +217,7 @@ router.delete(
  */
 router.post(
   '/articles/:slug/favorite',
-  [requireAcmeAuth, auth.required],
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const article = await favoriteArticle(req.params.slug, req.auth?.user?.id);
@@ -234,7 +237,7 @@ router.post(
  */
 router.delete(
   '/articles/:slug/favorite',
-  [requireAcmeAuth, auth.required],
+  acmeWriteGuard,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const article = await unfavoriteArticle(req.params.slug, req.auth?.user?.id);
